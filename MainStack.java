@@ -3,10 +3,10 @@ import java.util.Scanner;
 public class MainStack {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
-        boolean running = true;
+        boolean running = true; // ควบคุมลูปการทำงาน
         System.out.println("--START PROGRAM--");
         while (running) {
-            System.out.println("--MENU--");
+            System.out.println("--MENU--"); // แสดงเมนูให้เลือก
             System.out.println("1.Calculate Postfix (1 2 3 + -)");
             System.out.println("2.Calculate Infix (1 + 2 * 3)");
             System.out.println("3.Calculate Prefix (* 3 + 1 2)");
@@ -14,15 +14,15 @@ public class MainStack {
             System.out.println("5.GO TO SLEEP");
 
             String select = scanner.nextLine();
-            if (select.equals("5")) {
+            if (select.equals("5")) { // ดักเช็คเงื่อนไขการออกจากก่อนไปต่อ
                 System.out.println("Closing This Program");
                 running = false;
                 continue;
             }
-            System.out.println("Input Expression: ");
+            System.out.println("Input Expression: "); // รับexpression
             String expression = scanner.nextLine();
             try {
-                switch (select) {
+                switch (select) { // ส่งไปคำนวณตามที่เลือก
                     case "1":
                         Postfix postfix = new Postfix(expression);
                         postfix.calculate();
@@ -47,7 +47,7 @@ public class MainStack {
                     default:
                         System.out.println("Only Select 1-5.");
                 }
-            } catch (Exception e) {
+            } catch (Exception e) { // ดักจับError
                 System.out.println("Error");
             }
         }

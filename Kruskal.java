@@ -1,80 +1,74 @@
-import java.util.*; // นำเข้าไลบรารีพื้นฐานทั้งหมดของ Java เช่น List, Map, ArrayList
+import java.util.*;
 
-public class Kruskal<V> { // คลาสหลักของ Kruskal (V คือ Generic หมายถึงชื่อจุดยอดจะเป็น String, Integer
-                          // ก็ได้)
-
-    // เมธอดหลักสำหรับหา Minimum Spanning Tree (MST)
+public class Kruskal<V> {
     public MSTResult<V> compute(Graph<V> g) {
-        MSTResult<V> res = new MSTResult<>(); // สร้างกล่อง (Object) ไว้เก็บผลลัพธ์เส้นทางที่เลือกแล้ว
-        UnionFind<V> uf = new UnionFind<>(g.vertices()); // สร้างระบบตรวจสอบวงวน (Cycle) ให้จุดยอดทุกจุด
-        List<WeightedEdge<V>> edges = new ArrayList<>(g.allEdges()); // ดึงเส้นทางทั้งหมดในกราฟมากองรวมกันใน List
+        MSTResult<V> res = new MSTResult<>();
+        UnionFind<V> uf = new UnionFind<>(g.vertices());
+        List<WeightedEdge<V>> edges = new ArrayList<>(g.allEdges());
 
-        // หัวใจของ Kruskal: เอาเส้นทางทั้งหมดมาเรียงลำดับ "น้ำหนัก" จากน้อยไปมาก
+        // 1. เรียงเส้นทางทั้งหมดจากน้ำหนักน้อยไปมาก
         edges.sort(Comparator.comparingDouble(WeightedEdge::weight));
 
-        // วนลูปหยิบเส้นทางมาดูทีละเส้น (ตอนนี้เส้นที่เบาสุดอยู่คิวแรกสุด)
         for (WeightedEdge<V> e : edges) {
-            // เช็คว่าถ้าเอาเส้นนี้ (เชื่อมจุด u กับ v) เข้าไป จะเกิดวงวนไหม?
-            if (uf.union(e.u(), e.v())) { // ถ้า union คืนค่า true แปลว่าเชื่อมได้ ไม่เกิดวงวน
-                res.add(e); // เก็บเส้นนี้เข้ากล่องผลลัพธ์
+            // 2. ถ้าเชื่อมแล้วไม่เกิดวงวน (Cycle) ให้เก็บเข้าผลลัพธ์
+            if (uf.union(e.u(), e.v())) {
+                res.add(e);
 
-                // กฎของ Tree: ถ้ามี V จุด จะมีเส้นเชื่อมได้มากสุดแค่ V - 1 เส้น
+                // 3. ถ้าได้เส้นครบ V-1 เส้น แปลว่าเชื่อมครบทุกจุดแล้ว ให้หยุดลูป
                 if (res.edges().size() == g.vertexCount() - 1) {
-                    break; // ถ้าได้เส้นครบแล้ว ให้หยุดการทำงานทันที (ประหยัดเวลา)
+                    break;
                 }
             }
         }
-        return res; // คืนค่ากล่องผลลัพธ์กลับไปให้หน้า Main นำไปแสดงผล
+        return res;
     }
 }
 
-// ------------------------------------------------------------------
-// คลาส Union-Find (ตัวช่วยเช็คว่าจุด 2 จุดเคยเชื่อมต่อกันไปแล้วหรือยัง)
-// ------------------------------------------------------------------
+/**
+ * โครงสร้างข้อมูล Disjoint Set (Union-Find)
+ * ใช้สำหรับตรวจสอบและป้องกันการเกิดวงวน (Cycle) ในกราฟรวดเร็วขึ้น
+ */
 class UnionFind<V> {
-    private final Map<V, V> parent = new HashMap<>(); // สมุดจดว่า "ใครเป็นหัวหน้ากลุ่ม" ของแต่ละจุด
-    private final Map<V, Integer> rank = new HashMap<>(); // สมุดจด "ระดับความลึก/ยศ" ของต้นไม้แต่ละกลุ่ม
+    private final Map<V, V> parent = new HashMap<>();
+    private final Map<V, Integer> rank = new HashMap<>();
 
-    // ตอนเริ่มต้น สร้างระบบโดยให้ทุกจุดเป็นหัวหน้าของตัวเอง (แยกกันอยู่คนละกลุ่ม)
     public UnionFind(Collection<V> vertices) {
         for (V v : vertices) {
-            parent.put(v, v); // ให้จุด v มีหัวหน้าคือ v (ตัวเอง)
-            rank.put(v, 0); // เริ่มต้น ทุกคนยศ 0
+            parent.put(v, v);
+            rank.put(v, 0);
         }
     }
 
-    // เมธอดค้นหาว่า "ใครคือหัวหน้าใหญ่สุด" ของจุด x
     public V find(V x) {
-        V p = parent.get(x); // ไปดูสมุดจดว่าหัวหน้าของ x คือใคร
+        V p = parent.get(x);
         if (Objects.equals(p, x))
-            return x; // ถ้าหัวหน้าคือตัวเอง แปลว่าเจอหัวหน้าใหญ่แล้ว (Root)
-        V root = find(p); // ถ้ายังไม่ใช่ ให้ค้นหาต่อลึกลงไป (Recursive)
-        parent.put(x, root); // Path Compression: อัปเดตสมุดจดให้ชี้ไปที่หัวหน้าใหญ่เลย
-                             // คราวหน้าจะได้หาเร็วขึ้น
-        return root; // คืนค่าชื่อหัวหน้าใหญ่
+            return x;
+
+        // Path Compression: อัปเดตให้ชี้ไปที่หัวหน้าใหญ่สุดโดยตรง
+        // เพื่อให้อ่านค่าเร็วขึ้น
+        V root = find(p);
+        parent.put(x, root);
+        return root;
     }
 
-    // เมธอดสำหรับ "จับกลุ่มรวมกัน"
     public boolean union(V a, V b) {
-        V ra = find(a); // หาหัวหน้าใหญ่ของ a
-        V rb = find(b); // หาหัวหน้าใหญ่ของ b
+        V ra = find(a);
+        V rb = find(b);
         if (Objects.equals(ra, rb))
-            return false; // ถ้าหัวหน้าคนเดียวกัน แปลว่าอยู่กลุ่มเดียวกันแล้ว (ถ้ารวมอีกจะเกิดวงวน) คืนค่า
-                          // false
+            return false; // ถ้าหัวหน้าเดียวกัน แปลว่าเกิดวงวน
 
-        int rankA = rank.get(ra); // ขอดูยศหัวหน้า a
-        int rankB = rank.get(rb); // ขอดูยศหัวหน้า b
+        // Union by rank: รวมต้นไม้โดยให้กลุ่มที่ยศน้อยกว่าไปต่อท้ายกลุ่มใหญ่
+        int rankA = rank.get(ra);
+        int rankB = rank.get(rb);
 
-        // กฎ: ให้กลุ่มที่ยศน้อยกว่า ไปขอเป็นลูกน้องกลุ่มที่ยศใหญ่กว่า
-        // (ต้นไม้จะได้ไม่ลึกเกินไป)
-        if (rankA < rankB)
-            parent.put(ra, rb); // a ยศน้อยกว่า ให้ b เป็นหัวหน้า
-        else if (rankA > rankB)
-            parent.put(rb, ra); // b ยศน้อยกว่า ให้ a เป็นหัวหน้า
-        else { // ถ้ายศเท่ากัน
-            parent.put(rb, ra); // ยอมให้ a เป็นหัวหน้า
-            rank.put(ra, rankA + 1); // แล้วเลื่อนยศให้ a 1 ขั้น
+        if (rankA < rankB) {
+            parent.put(ra, rb);
+        } else if (rankA > rankB) {
+            parent.put(rb, ra);
+        } else {
+            parent.put(rb, ra);
+            rank.put(ra, rankA + 1);
         }
-        return true; // จับกลุ่มสำเร็จ คืนค่า true
+        return true;
     }
 }
