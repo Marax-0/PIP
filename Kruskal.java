@@ -1,74 +1,35 @@
 import java.util.*;
 
-public class Kruskal<V> {
-    public MSTResult<V> compute(Graph<V> g) {
-        MSTResult<V> res = new MSTResult<>();
-        UnionFind<V> uf = new UnionFind<>(g.vertices());
-        List<WeightedEdge<V>> edges = new ArrayList<>(g.allEdges());
+public class Kruskal {
+    public static List<Edge> compute(Graph g) {
+        List<Edge> result = new ArrayList<>();
+        List<Edge> edges = new ArrayList<>(g.allEdges());
+        edges.sort(Comparator.comparingDouble(Edge::weight));
 
-        // 1. เรียงเส้นทางทั้งหมดจากน้ำหนักน้อยไปมาก
-        edges.sort(Comparator.comparingDouble(WeightedEdge::weight));
+        Map<Integer, Integer> parent = new HashMap<>();
+        Map<Integer, Integer> rank = new HashMap<>();
+        for (int v : g.vertices()) { parent.put(v, v); rank.put(v, 0); }
 
-        for (WeightedEdge<V> e : edges) {
-            // 2. ถ้าเชื่อมแล้วไม่เกิดวงวน (Cycle) ให้เก็บเข้าผลลัพธ์
-            if (uf.union(e.u(), e.v())) {
-                res.add(e);
-
-                // 3. ถ้าได้เส้นครบ V-1 เส้น แปลว่าเชื่อมครบทุกจุดแล้ว ให้หยุดลูป
-                if (res.edges().size() == g.vertexCount() - 1) {
-                    break;
-                }
+        for (Edge e : edges) {
+            int ru = find(parent, e.u());
+            int rv = find(parent, e.v());
+            if (ru != rv) {
+                result.add(e);
+                union(parent, rank, ru, rv);
+                if (result.size() == g.vertexCount() - 1) break;
             }
         }
-        return res;
-    }
-}
-
-/**
- * โครงสร้างข้อมูล Disjoint Set (Union-Find)
- * ใช้สำหรับตรวจสอบและป้องกันการเกิดวงวน (Cycle) ในกราฟรวดเร็วขึ้น
- */
-class UnionFind<V> {
-    private final Map<V, V> parent = new HashMap<>();
-    private final Map<V, Integer> rank = new HashMap<>();
-
-    public UnionFind(Collection<V> vertices) {
-        for (V v : vertices) {
-            parent.put(v, v);
-            rank.put(v, 0);
-        }
+        return result;
     }
 
-    public V find(V x) {
-        V p = parent.get(x);
-        if (Objects.equals(p, x))
-            return x;
-
-        // Path Compression: อัปเดตให้ชี้ไปที่หัวหน้าใหญ่สุดโดยตรง
-        // เพื่อให้อ่านค่าเร็วขึ้น
-        V root = find(p);
-        parent.put(x, root);
-        return root;
+    private static int find(Map<Integer, Integer> parent, int x) {
+        if (parent.get(x) != x) parent.put(x, find(parent, parent.get(x)));
+        return parent.get(x);
     }
 
-    public boolean union(V a, V b) {
-        V ra = find(a);
-        V rb = find(b);
-        if (Objects.equals(ra, rb))
-            return false; // ถ้าหัวหน้าเดียวกัน แปลว่าเกิดวงวน
-
-        // Union by rank: รวมต้นไม้โดยให้กลุ่มที่ยศน้อยกว่าไปต่อท้ายกลุ่มใหญ่
-        int rankA = rank.get(ra);
-        int rankB = rank.get(rb);
-
-        if (rankA < rankB) {
-            parent.put(ra, rb);
-        } else if (rankA > rankB) {
-            parent.put(rb, ra);
-        } else {
-            parent.put(rb, ra);
-            rank.put(ra, rankA + 1);
-        }
-        return true;
+    private static void union(Map<Integer, Integer> parent, Map<Integer, Integer> rank, int a, int b) {
+        if (rank.get(a) < rank.get(b)) parent.put(a, b);
+        else if (rank.get(a) > rank.get(b)) parent.put(b, a);
+        else { parent.put(b, a); rank.put(a, rank.get(a) + 1); }
     }
 }
